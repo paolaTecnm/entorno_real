@@ -5,7 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 app =  Flask(__name__)
 
 # Configuración de la base de datos PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'URLEXTERNA les d'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://paogg:PWRrF1wBiAsOiqT1stZREB0tkZ79NbjD@dpg-cuiikclumphs7381jdlg-a.oregon-postgres.render.com/db_cetech'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -32,16 +32,50 @@ class Alumno(db.Model):
 #Ruta raiz
 @app.route('/')
 def index():
-    #retornar los alumnos
+    #trae todos los alumnos
+    alumnos = Alumno.query.all()
+    return render_template('index.html', alumnos = alumnos)
+#Ruta crear alumnos
+@app.route('/alumnos/new', methods=['GET', 'POST'])
+def create_alumno():
+    if request.method == 'POST':
+        #Agregar Alumno
+        no_control = request.form['no_control']
+        nombre = request.form['nombre']
+        ap_paterno = request.form['ap_paterno']
+        ap_materno = request.form['ap_materno']
+        semestre = request.form['semestre']
 
-    #return 'Hola Mundo'
-    return render_template('index.html')
+        nvo_alumno =Alumno(no_control=no_control, nombre=nombre, ap_paterno=ap_paterno, ap_materno=ap_materno, semestre=semestre)
 
-#Ruta /alumnos
-@app.route('/alumnos')
-def getAlumnos():
-    return 'Aqui van los alumnos'
+        db.session.add(nvo_alumno)
+        db.session.commit()
 
+        return redirect(url_for('index'))
+    
+    #Aqui sigue si es GET
+    return render_template('create_alumno.html')
+#Eliminar Alumno
+@app.route('/alumnos/delete/<string:no_control>')
+def delete_alumno(no_control):
+    alumno = Alumno.query.get(no_control)
+    if alumno:
+        db.session.delete(alumno)
+        db.session.commit()
+    return redirect(url_for('index'))
+
+#Actualizar alumno
+@app.route('/alumnos/update/<string:no_control>', methods=['GET','POST'])
+def update_alumno(no_control):
+    alumno = Alumno.query.get(no_control)
+    if request.method == 'POST':
+        alumno.nombre = request.form['nombre']
+        alumno.ap_paterno = request.form['ap_paterno']
+        alumno.ap_materno = request.form['ap_materno']
+        alumno.semestre = request.form['semestre']
+        db.session.commit()
+        return redirect(url_for('index'))
+    return render_template('update_alumno.html', alumno=alumno)
 
 if __name__ == '__main__':
     app.run(debug=True)
